@@ -38,7 +38,7 @@ usage: htcomments [-h] [-l] [-t T]
 
 optional arguments:
   -h, --help  show this help message and exit
-  -l          list registered tags
+  -l          list registered tags and explanations
   -t T        tag to search. pound sign optional
 ```
 
@@ -58,8 +58,8 @@ Put a '.htcomments' file in your repo root.  Here is an example:
 
 ```
 include py$
-tag #htSqlite
-tag #htLanguageParse
+tag #htSqlite places where we initialize sqlite connections
+tag #htLanguageParse places where we write our own parsers for little languages or config files
 ```
 
 The 'include' directive says to take the regex that follows and only search files matching 
@@ -73,3 +73,7 @@ The 'tag' directive must be followed by a space and a tag starting with '#ht'.
 Q: Your people might forget to tag things... What do you do about that?
 A: I don't know - this doesn't attempt to solve that.  That's probably something your org needs to 
 figure out.  This was intended for big orgs with big messy repos.
+
+
+## Future work
+Hoping to add support for multiple repos shortly.

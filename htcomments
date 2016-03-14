@@ -30,10 +30,14 @@ def parse_htcomments_config():
             if directive not in VALID_DIRECTIVES:
                 sys.exit("Found config line starting with invalid directive: '%s'" % directive)
             if directive == TAG_DIRECTIVE:
-                tag = splitup[1]
-                if not tag.startswith("#ht"):
-                    sys.exit("Tag '%s' does not start with #ht" % tag)
-                tags.append(tag)
+                tag_name = splitup[1]
+                try:
+                    tag_explanation = splitup[2]
+                except IndexError:
+                    sys.exit("Tag explanation for tag %s was emtpy" % tag_name)
+                if not tag_name.startswith("#ht"):
+                    sys.exit("Tag '%s' does not start with #ht" % tag_name)
+                tags.append({"name": tag_name, "explanation": tag_explanation})
             if directive == INCLUDE_DIRECTIVE:
                 include_pattern = line.strip().split(' ', 1)[1]
                 try:
@@ -74,31 +78,33 @@ def find_tag_snippets(include_patterns):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', action='store_true', help='list registered tags')
+    parser.add_argument('-l', action='store_true', help='list registered tags and explanations')
     parser.add_argument('-t', required=False, help='tag to search.  pound sign optional')
     #parser.add_argument('-g', required=False, help='act globally / multi-repo mode')
     args = parser.parse_args()
 
     include_patterns, registered_tags = parse_htcomments_config()
+    registered_tag_names = [t['name'] for t in registered_tags]
+
     if args.t:
         # Want to allow people to search for tags on the commandline without typing in the '#'
         # The '#' will look like a comment and typing single quotes is annoying
         if not args.t.startswith("#"):
             args.t = "#" + args.t
-
-        if args.t not in registered_tags:
+        
+        if args.t not in registered_tag_names:
             sys.exit("Searched tag '%s' is not in registered tags" % args.t)
 
     if args.l:
         for tag in registered_tags:
-            print tag
+            print tag["name"] + " " + tag["explanation"]
         sys.exit(0)
 
 
     snippets = find_tag_snippets(include_patterns)
     for snippet in snippets:
         tag = snippet["tag"]
-        if tag not in registered_tags:
+        if tag not in registered_tag_names:
             sys.exit("Tag %s was found but is not in registered tags." % tag)
 
     for snippet in snippets:
