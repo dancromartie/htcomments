@@ -58,12 +58,16 @@ Put a '.htcomments' file in your repo root.  Here is an example:
 
 ```
 include py$
+exclude fake
 tag #htSqlite places where we initialize sqlite connections
 tag #htLanguageParse places where we write our own parsers for little languages or config files
 ```
 
-The 'include' directive says to take the regex that follows and only search files matching 
+The 'include' directive says to take the regex that follows and only search files with a full path matching 
 that regex.  The regex must be compatible with the 're' module in Python.
+
+The 'exclude' directive is just like the include directive. The program will apply all excludes 
+before applying includes, so excludes take precedence.
 
 The 'tag' directive must be followed by a space and a tag starting with '#ht'.
 

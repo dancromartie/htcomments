@@ -8,7 +8,8 @@ import sys
 
 TAG_DIRECTIVE = "tag"
 INCLUDE_DIRECTIVE = "include"
-VALID_DIRECTIVES = [INCLUDE_DIRECTIVE, TAG_DIRECTIVE]
+EXCLUDE_DIRECTIVE = "exclude"
+VALID_DIRECTIVES = [INCLUDE_DIRECTIVE, TAG_DIRECTIVE, EXCLUDE_DIRECTIVE]
 
 def get_repo_root():
     root_dir_output = subprocess.check_output(
@@ -21,6 +22,7 @@ def parse_htcomments_config():
     ht_config_path = get_repo_root() + "/.htcomments"
     tags = []
     include_patterns = []
+    exclude_patterns = []
     with open(ht_config_path, "rb") as f:
         ht_config_lines = f.readlines()
         for line in ht_config_lines:
@@ -46,18 +48,42 @@ def parse_htcomments_config():
                     print "Could not compile regex for include pattern '%s'" % include_pattern
                     raise
                 include_patterns.append(include_pattern)
+            if directive == EXCLUDE_DIRECTIVE:
+                exclude_pattern = line.strip().split(' ', 1)[1]
+                try:
+                    re.compile(exclude_pattern)
+                except:
+                    print "Could not compile regex for exclude pattern '%s'" % exclude_pattern
+                    raise
+                exclude_patterns.append(exclude_pattern)
 
     tags.sort()
-    return include_patterns, tags
+    return include_patterns, exclude_patterns, tags
     
 
-def find_tag_snippets(include_patterns):
+def find_tag_snippets(include_patterns, exclude_patterns):
     files_to_search = set()
     for root, dirs, files in os.walk(get_repo_root()):
         for file in files:
-            for include_pattern in include_patterns:
-                if re.search(include_pattern, file):
-                    files_to_search.add(os.path.join(root, file))
+            excluded_by_pattern = None
+            included_by_pattern = None
+            full_path = os.path.join(root, file)
+            for exclude_pattern in exclude_patterns:
+                if re.search(exclude_pattern, full_path):
+                    excluded_by_pattern = True
+
+            if not excluded_by_pattern:
+                for include_pattern in include_patterns:
+                    if re.search(include_pattern, full_path):
+                        included_by_pattern = True
+
+            if included_by_pattern and excluded_by_pattern:
+                sys.exit("File %s was both included and excluded by patterns." % full_path)
+
+            if included_by_pattern and not excluded_by_pattern:
+                files_to_search.add(full_path)
+
+    print files_to_search
 
     tags_found = []
     snippets = []
@@ -83,7 +109,7 @@ def main():
     #parser.add_argument('-g', required=False, help='act globally / multi-repo mode')
     args = parser.parse_args()
 
-    include_patterns, registered_tags = parse_htcomments_config()
+    include_patterns, exclude_patterns, registered_tags = parse_htcomments_config()
     registered_tag_names = [t['name'] for t in registered_tags]
 
     if args.t:
@@ -101,7 +127,7 @@ def main():
         sys.exit(0)
 
 
-    snippets = find_tag_snippets(include_patterns)
+    snippets = find_tag_snippets(include_patterns, exclude_patterns)
     for snippet in snippets:
         tag = snippet["tag"]
         if tag not in registered_tag_names:
