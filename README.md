@@ -66,3 +66,10 @@ The 'include' directive says to take the regex that follows and only search file
 that regex.  The regex must be compatible with the 're' module in Python.
 
 The 'tag' directive must be followed by a space and a tag starting with '#ht'.
+
+
+## FAQ
+
+Q: Your people might forget to tag things... What do you do about that?
+A: I don't know - this doesn't attempt to solve that.  That's probably something your org needs to 
+figure out.  This was intended for big orgs with big messy repos.
