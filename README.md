@@ -6,7 +6,8 @@ Hash tag comments
 
 This attempts to:
  - let people 'tag' parts of a codebase
- - keep some sort of referential integrity, i.e. all tags must be 'registered' with explanations
+ - keep some sort of referential integrity, i.e. all tags found must be 'registered' with explanations, 
+else fail loudly
  - keep all tags and explanations within version control, embedded in the source code
  - be really simple so almost anyone can contribute tags
 

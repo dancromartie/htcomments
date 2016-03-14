@@ -83,8 +83,6 @@ def find_tag_snippets(include_patterns, exclude_patterns):
             if included_by_pattern and not excluded_by_pattern:
                 files_to_search.add(full_path)
 
-    print files_to_search
-
     tags_found = []
     snippets = []
     for file in files_to_search:
