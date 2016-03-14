@@ -1,0 +1,118 @@
+#!/usr/bin/python
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+TAG_DIRECTIVE = "tag"
+INCLUDE_DIRECTIVE = "include"
+VALID_DIRECTIVES = [INCLUDE_DIRECTIVE, TAG_DIRECTIVE]
+
+def get_repo_root():
+    root_dir_output = subprocess.check_output(
+        ["git",  "rev-parse", "--show-toplevel"])
+    root_dir = root_dir_output.strip()
+    return root_dir
+
+
+def parse_htcomments_config():
+    ht_config_path = get_repo_root() + "/.htcomments"
+    tags = []
+    include_patterns = []
+    with open(ht_config_path, "rb") as f:
+        ht_config_lines = f.readlines()
+        for line in ht_config_lines:
+            line = line.strip()
+            splitup = re.split(r' ', line, 2)
+            directive = splitup[0]
+            if directive not in VALID_DIRECTIVES:
+                sys.exit("Found config line starting with invalid directive: '%s'" % directive)
+            if directive == TAG_DIRECTIVE:
+                tag = splitup[1]
+                if not tag.startswith("#ht"):
+                    sys.exit("Tag '%s' does not start with #ht" % tag)
+                tags.append(tag)
+            if directive == INCLUDE_DIRECTIVE:
+                include_pattern = line.strip().split(' ', 1)[1]
+                try:
+                    re.compile(include_pattern)
+                except:
+                    print "Could not compile regex for include pattern '%s'" % include_pattern
+                    raise
+                include_patterns.append(include_pattern)
+
+    tags.sort()
+    return include_patterns, tags
+    
+
+def find_tag_snippets(include_patterns):
+    files_to_search = set()
+    for root, dirs, files in os.walk(get_repo_root()):
+        for file in files:
+            for include_pattern in include_patterns:
+                if re.search(include_pattern, file):
+                    files_to_search.add(os.path.join(root, file))
+
+    tags_found = []
+    snippets = []
+    for file in files_to_search:
+        with open(file, "rb") as f:
+            file_text = f.read()
+            new_tags = re.findall("#ht\S+", file_text)
+            tags_found += new_tags
+            for tag in new_tags:
+                results = re.findall(
+                    r'^.{0,100}%s.{0,100}$' % tag, file_text, re.DOTALL|re.MULTILINE)
+                for result in results:
+                    snippets.append({
+                        "tag": tag, "text": result, "file": file
+                    })
+    return snippets
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', action='store_true', help='list registered tags')
+    parser.add_argument('-t', required=False, help='tag to search.  pound sign optional')
+    #parser.add_argument('-g', required=False, help='act globally / multi-repo mode')
+    args = parser.parse_args()
+
+    include_patterns, registered_tags = parse_htcomments_config()
+    if args.t:
+        # Want to allow people to search for tags on the commandline without typing in the '#'
+        # The '#' will look like a comment and typing single quotes is annoying
+        if not args.t.startswith("#"):
+            args.t = "#" + args.t
+
+        if args.t not in registered_tags:
+            sys.exit("Searched tag '%s' is not in registered tags" % args.t)
+
+    if args.l:
+        for tag in registered_tags:
+            print tag
+        sys.exit(0)
+
+
+    snippets = find_tag_snippets(include_patterns)
+    for snippet in snippets:
+        tag = snippet["tag"]
+        if tag not in registered_tags:
+            sys.exit("Tag %s was found but is not in registered tags." % tag)
+
+    for snippet in snippets:
+        tag = snippet["tag"]
+        if args.t and tag != args.t:
+            continue
+        text = snippet["text"]
+        file = snippet["file"]
+        print "*" * 20 + tag + ": " + file + "*" * 20
+        print text
+        print
+        
+
+
+
+if __name__ == "__main__":
+    main()
