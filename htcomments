@@ -10,6 +10,8 @@ TAG_DIRECTIVE = "tag"
 INCLUDE_DIRECTIVE = "include"
 EXCLUDE_DIRECTIVE = "exclude"
 VALID_DIRECTIVES = [INCLUDE_DIRECTIVE, TAG_DIRECTIVE, EXCLUDE_DIRECTIVE]
+NUM_LINES_CONTEXT = 3
+
 
 def get_repo_root():
     root_dir_output = subprocess.check_output(
@@ -42,6 +44,8 @@ def parse_htcomments_config():
                 tags.append({"name": tag_name, "explanation": tag_explanation})
             if directive == INCLUDE_DIRECTIVE:
                 include_pattern = line.strip().split(' ', 1)[1]
+                if re.match(r'"|\'', include_pattern):
+                    sys.exit("Regex should not start with quotes.  Anchor it if you must.")
                 try:
                     re.compile(include_pattern)
                 except:
@@ -61,7 +65,7 @@ def parse_htcomments_config():
     return include_patterns, exclude_patterns, tags
     
 
-def find_tag_snippets(include_patterns, exclude_patterns):
+def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
     files_to_search = set()
     for root, dirs, files in os.walk(get_repo_root()):
         for file in files:
@@ -85,18 +89,37 @@ def find_tag_snippets(include_patterns, exclude_patterns):
 
     tags_found = []
     snippets = []
+
     for file in files_to_search:
         with open(file, "rb") as f:
+            line_counter = 0
             file_text = f.read()
-            new_tags = re.findall("#ht\S+", file_text)
-            tags_found += new_tags
-            for tag in new_tags:
-                results = re.findall(
-                    r'^.{0,100}%s.{0,100}$' % tag, file_text, re.DOTALL|re.MULTILINE)
-                for result in results:
-                    snippets.append({
-                        "tag": tag, "text": result, "file": file
-                    })
+            # .read exhausts something, so seek back to the beginning
+            f.seek(0)
+            file_lines = f.readlines()
+            tags_in_file = set(re.findall("#ht\S+", file_text))\
+                .intersection(registered_tag_names)
+            for line in file_lines:
+                for tag in tags_in_file:
+                    tags_in_this_line = re.findall(
+                        r'%s' % tag, line, re.DOTALL|re.MULTILINE)
+                    for result in tags_in_this_line:
+                        line_range_lower = max(0, line_counter - NUM_LINES_CONTEXT)
+                        line_range_upper = min(len(file_lines), line_counter + NUM_LINES_CONTEXT + 1)
+                        context_lines = file_lines[line_range_lower:line_range_upper]
+                        context_range = range(line_range_lower, line_range_upper)
+                        numbered_lines = [
+                            str(num + 1) + cl for num, cl in zip(context_range, context_lines)
+                        ]
+                        # Newline already included
+                        context = "".join(numbered_lines)
+                        snippets.append({
+                            "tag": tag,
+                            "text": context,
+                            "file": file,
+                            "start_line": line_counter + 1
+                        })
+                line_counter += 1
     return snippets
 
 
@@ -104,6 +127,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', action='store_true', help='list registered tags and explanations')
     parser.add_argument('-t', required=False, help='tag to search.  pound sign optional')
+    parser.add_argument('-o', required=False, action='store_true', help='open results in pager')
     #parser.add_argument('-g', required=False, help='act globally / multi-repo mode')
     args = parser.parse_args()
 
@@ -125,7 +149,7 @@ def main():
         sys.exit(0)
 
 
-    snippets = find_tag_snippets(include_patterns, exclude_patterns)
+    snippets = find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names)
     for snippet in snippets:
         tag = snippet["tag"]
         if tag not in registered_tag_names:
@@ -137,9 +161,13 @@ def main():
             continue
         text = snippet["text"]
         file = snippet["file"]
-        print "*" * 20 + tag + ": " + file + "*" * 20
-        print text
-        print
+        if args.o:
+            start_line_arg = "+%s" % snippet["start_line"]
+            subprocess.call(["less", start_line_arg, "-N", file])
+        else:
+            print "*" * 20 + tag + ": " + file + "*" * 20
+            print text
+            print
         
 
 
