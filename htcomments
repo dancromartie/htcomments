@@ -65,7 +65,7 @@ def parse_htcomments_config():
     return include_patterns, exclude_patterns, tags
     
 
-def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
+def find_matching_files(include_patterns, exclude_patterns):
     files_to_search = set()
     for root, dirs, files in os.walk(get_repo_root()):
         for file in files:
@@ -86,7 +86,11 @@ def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
 
             if included_by_pattern and not excluded_by_pattern:
                 files_to_search.add(full_path)
+    return files_to_search
 
+
+def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
+    files_to_search = find_matching_files(include_patterns, exclude_patterns)
     tags_found = []
     snippets = []
 
@@ -128,6 +132,7 @@ def main():
     parser.add_argument('-l', action='store_true', help='list registered tags and explanations')
     parser.add_argument('-t', required=False, help='tag to search.  pound sign optional')
     parser.add_argument('-o', required=False, action='store_true', help='open results in pager')
+    parser.add_argument('-v', required=False, action='store_true', help='validate tags in codebase')
     #parser.add_argument('-g', required=False, help='act globally / multi-repo mode')
     args = parser.parse_args()
 
@@ -148,6 +153,16 @@ def main():
             print tag["name"] + " " + tag["explanation"]
         sys.exit(0)
 
+    if args.v:
+        grep_command = "git grep '#ht' %s | egrep -o '#ht\w+' | grep -v '#https' | sort -u" \
+            % get_repo_root()
+        all_tags_found_in_code = subprocess.check_output(grep_command, shell=True).split("\n")
+        all_tags_found_in_code = set([x.strip() for x in all_tags_found_in_code if x.strip()])
+        for t in all_tags_found_in_code:
+            if t not in registered_tag_names:
+                sys.exit("Tag %s was found in code but not in registered tags. Update .htcomments" \
+                    % t)
+        sys.exit(0)
 
     snippets = find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names)
     for snippet in snippets:
