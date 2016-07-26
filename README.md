@@ -42,7 +42,7 @@ use the term "business_ear" (for estimated annual revenue)?  Or did they just ty
 
 Do you want to search places where revenue is declared in a class file?  Do you only want parts 
 where you do logic around revenue?  A grep -i for "revenue" will probably turn up both.  If you 
-only want places where there is business logic around revenue, maybe revenueLogic is a worthwhile 
+only want places where there is business logic around revenue, maybe revenue_logic is a worthwhile 
 tag. Your organization may want to be able to make such a distinction, depending on who's looking 
 at what code.
 
@@ -54,21 +54,24 @@ in Git.
 ## Usage
 
 ```
-usage: htcomments [-h] [-l] [-t T]
+
+usage: htcomments [-h] [-c] [-l] [-o] [-t T] [-v]
 
 optional arguments:
   -h, --help  show this help message and exit
+  -c          count by tag
   -l          list registered tags and explanations
+  -o          open results in pager
   -t T        tag to search. pound sign optional
+  -v          validate tags in codebase
 ```
 
 Put the htcomments executable on your path.  Execute it inside of a git repo.
 
-'htcomments -t htRevenue' would show you code snippets where you have tagged 'htRevenue' in your 
-codebase.  Presumably you tagged this because it shows up in many parts of your codebase and 
-there is somebody who cares about finding it easily.
+'htcomments -t ht_duplicated_code' would show you code snippets near that tag in your 
+codebase.
 
-If you are having trouble finding the exact tag name, you could try 'htcomments -l | grep rev', 
+If you are having trouble finding the exact tag name, you could try 'htcomments -l | grep dup', 
 for example.
 
 
@@ -78,9 +81,10 @@ Put a '.htcomments' file in your repo root.  Here is an example:
 
 ```
 include py$
-exclude fake
-tag #htSqlite places where we initialize sqlite connections
-tag #htLanguageParse places where we write our own parsers for little languages or config files
+exclude json$
+tag #ht_duplicated_code places where we seem to be copy pasting a lot
+tag #ht_a_b_test places where we do logic around a/b tests
+tag #ht_should_use_existing_function places where we seem to not know about an existing utility function
 ```
 
 The 'include' directive says to take the regex that follows and only search files with a full path matching 
@@ -89,15 +93,20 @@ that regex.  The regex must be compatible with the 're' module in Python.
 The 'exclude' directive is just like the include directive. The program will apply all excludes 
 before applying includes, so excludes take precedence.
 
-The 'tag' directive must be followed by a space and a tag starting with '#ht'.
+The 'tag' directive must be followed by a space and a tag starting with '#ht_'.
 
 
-## FAQ
+## Anticipated FAQ
+
+Q: I don't want to have to use this script right now.  What should I do?
+A: Just grep for the tags that others have left.  But, if leaving your own tags, you will have to work hard to make sure you are not mistyping tags or that each tag you leave is "registered" and explained.
+
+Q: I am in the middle of coding and it's tough to look up the right tag name constantly.  How can I make this easier?
+A: If you use vim, try using a little vimscript for this.  You can also just keep your tags open in any editor.
 
 Q: Your people might forget to tag things... What do you do about that?
 A: I don't know - this doesn't attempt to solve that.  That's probably something your org needs to 
-figure out.  This was intended for big orgs with big messy repos.
-
+figure out.  This was intended for big orgs with complex/messy codebases.
 
 ## Future work
-Hoping to add support for multiple repos shortly.
+Hoping to add support for multiple repos eventually.
