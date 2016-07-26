@@ -14,28 +14,25 @@ else fail loudly
 
 ### Ideas of tags to get you started
 
-(prefix all of these tags with a pound sign.  I would have included it but I don't feel like fighting with 
-Markdown syntax right now)
-
- - ht_consider_making_function
- - ht_duplicated_code
- - ht_typo_in_var_name
- - ht_possible_outdated_comment
- - ht_needs_more_comments
- - ht_dan_confused
- - ht_needs_link_to_docs
- - ht_this_is_dangerous
- - ht_style_violation
- - ht_we_have_a_function_for_this_please_use_it
+ - #ht_consider_making_function
+ - #ht_duplicated_code
+ - #ht_typo_in_var_name
+ - #ht_possible_outdated_comment
+ - #ht_needs_more_comments
+ - #ht_dan_confused
+ - #ht_needs_link_to_docs
+ - #ht_this_is_dangerous
+ - #ht_style_violation
+ - #ht_we_have_a_function_for_this_please_use_it
 
 Or, more business oriented:
 
- - ht_revenue_logic
- - ht_a_b_tests
- - ht_product_pricing
- - ht_acme_corp_gold_rewards
- - ht_imputation
- - ht_decision_waivers
+ - #ht_revenue_logic
+ - #ht_a_b_tests
+ - #ht_product_pricing
+ - #ht_acme_corp_gold_rewards
+ - #ht_imputation
+ - #ht_decision_waivers
 
 ### Why not just grep -r for things?
 
@@ -105,6 +102,9 @@ The 'tag' directive must be followed by a space and a tag starting with '#ht_'.
 
 
 ## Anticipated FAQ
+
+Q: Using both # and ht seems kind of redundant.  Why the #ht_ prefix?  Why not just ht_ or #?
+A: Just '#' is too likely to  yield false positives in normal comments.  #ht_ makes it more likely that it's a comment and not a variable name, even for languages where # doesn't indicate a comment. Just 'ht_' might conflict with variable names etc.
 
 Q: I don't want to have to use this script right now.  What should I do?
 A: Just grep for the tags that others have left.  But, if leaving your own tags, you will have to work hard to make sure you are not mistyping tags or that each tag you leave is "registered" and explained.

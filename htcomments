@@ -202,7 +202,7 @@ def main():
         else:
             print("*" * 20 + tag + ": " + file + "*" * 20)
             print(text)
-            print()
+            print("\n")
         
 
 
