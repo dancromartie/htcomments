@@ -6,17 +6,36 @@ Hash tag comments
 
 This attempts to:
  - let people 'tag' parts of a codebase
+ - provide a way to do 'codebase review' as opposed 'code review'/'commit review'/'pull request review'
  - keep some sort of referential integrity, i.e. all tags found must be 'registered' with explanations, 
 else fail loudly
  - keep all tags and explanations within version control, embedded in the source code
- - be really simple so almost anyone can contribute tags
+
+
+### Ideas of tags to get you started
+
+(prefix all of these tags with a pound sign.  I would have included it but I don't feel like fighting with 
+Markdown syntax right now)
+
+ - ht_consider_making_function
+ - ht_duplicated_code
+ - ht_typo_in_var_name
+ - ht_possible_outdated_comment
+ - ht_needs_more_comments
+ - ht_dan_confused
+ - ht_needs_link_to_docs
+ - ht_this_is_dangerous
+ - ht_style_violation
+ - ht_we_have_a_function_for_this_please_use_it
+
 
 ### Why not just grep -r for things?
-This is by no means a replacement for grep.  It's more geared towards easing governance and 
-reviews by a wide audience - one that has the resources to go around tagging things and the vastness 
-to need such a process.
 
-Consider a use case of searching your codebase for everywhere you deal with "revenue".
+You really don't have to use this as a tool, and can just borrow the convention
+of tagging and 'git grep' etc for the tags if you want.
+
+This is by no means a replacement for grep.  However, consider a use case of
+searching your codebase for everywhere you deal with "revenue".
 
 Did the developer use the term "revenue"?  Or did they use the term "business_income"?  Or did they 
 use the term "business_ear" (for estimated annual revenue)?  Or did they just type "annual_rev"?  
