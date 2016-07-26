@@ -28,6 +28,14 @@ Markdown syntax right now)
  - ht_style_violation
  - ht_we_have_a_function_for_this_please_use_it
 
+Or, more business oriented:
+
+ - ht_revenue_logic
+ - ht_a_b_tests
+ - ht_product_pricing
+ - ht_acme_corp_gold_rewards
+ - ht_imputation
+ - ht_decision_waivers
 
 ### Why not just grep -r for things?
 
