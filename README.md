@@ -62,6 +62,8 @@ in Git.
 
 usage: htcomments [-h] [-c] [-l] [-o] [-t T] [-v]
 
+Hashtag Comments. Called with no args, prints all snippets around tags.
+
 optional arguments:
   -h, --help  show this help message and exit
   -c          count by tag

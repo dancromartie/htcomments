@@ -140,7 +140,10 @@ def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    help_description = """
+        Hashtag Comments.  Called with no args, prints all snippets around tags.
+    """
+    parser = argparse.ArgumentParser(description=help_description)
     parser.add_argument('-c', required=False, action='store_true', help='count by tag')
     parser.add_argument('-l', action='store_true', help='list registered tags and explanations')
     parser.add_argument('-o', required=False, action='store_true', help='open results in pager')
