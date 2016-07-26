@@ -22,6 +22,7 @@ def get_repo_root():
 
 
 def parse_htcomments_config():
+    valid_tag_regex = r'^#ht_[a-z0-9_]+$'
     ht_config_path = get_repo_root() + "/.htcomments"
     tags = []
     include_patterns = []
@@ -36,6 +37,8 @@ def parse_htcomments_config():
                 sys.exit("Found config line starting with invalid directive: '%s'" % directive)
             if directive == TAG_DIRECTIVE:
                 tag_name = splitup[1]
+                if not re.match(valid_tag_regex, tag_name):
+                    sys.exit("Found bad tag %s.  Must match regex %s" % (tag_name, valid_tag_regex))
                 try:
                     tag_explanation = splitup[2]
                 except IndexError:
