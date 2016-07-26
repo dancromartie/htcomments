@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import collections
 import os
 import re
 import subprocess
@@ -16,7 +17,7 @@ NUM_LINES_CONTEXT = 3
 def get_repo_root():
     root_dir_output = subprocess.check_output(
         ["git",  "rev-parse", "--show-toplevel"])
-    root_dir = root_dir_output.strip()
+    root_dir = root_dir_output.decode("utf-8").strip()
     return root_dir
 
 
@@ -25,7 +26,7 @@ def parse_htcomments_config():
     tags = []
     include_patterns = []
     exclude_patterns = []
-    with open(ht_config_path, "rb") as f:
+    with open(ht_config_path, "r") as f:
         ht_config_lines = f.readlines()
         for line in ht_config_lines:
             line = line.strip()
@@ -49,7 +50,7 @@ def parse_htcomments_config():
                 try:
                     re.compile(include_pattern)
                 except:
-                    print "Could not compile regex for include pattern '%s'" % include_pattern
+                    print("Could not compile regex for include pattern '%s'" % include_pattern)
                     raise
                 include_patterns.append(include_pattern)
             if directive == EXCLUDE_DIRECTIVE:
@@ -57,12 +58,20 @@ def parse_htcomments_config():
                 try:
                     re.compile(exclude_pattern)
                 except:
-                    print "Could not compile regex for exclude pattern '%s'" % exclude_pattern
+                    print("Could not compile regex for exclude pattern '%s'" % exclude_pattern)
                     raise
                 exclude_patterns.append(exclude_pattern)
 
-    tags.sort()
+    tags.sort(key=lambda x: x['name'])
     return include_patterns, exclude_patterns, tags
+
+
+def get_all_tags_in_code():
+    grep_command = "git grep '#ht' %s | egrep -o '#ht\w+' | grep -v '#https'" \
+        % get_repo_root()
+    all_tags_found_in_code = subprocess.check_output(grep_command, shell=True)
+    all_tags_found_in_code = all_tags_found_in_code.decode("utf-8").split("\n")
+    return [x.strip() for x in all_tags_found_in_code if x.strip()]
     
 
 def find_matching_files(include_patterns, exclude_patterns):
@@ -95,7 +104,7 @@ def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
     snippets = []
 
     for file in files_to_search:
-        with open(file, "rb") as f:
+        with open(file, "r") as f:
             line_counter = 0
             file_text = f.read()
             # .read exhausts something, so seek back to the beginning
@@ -129,9 +138,10 @@ def find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c', required=False, action='store_true', help='count by tag')
     parser.add_argument('-l', action='store_true', help='list registered tags and explanations')
-    parser.add_argument('-t', required=False, help='tag to search.  pound sign optional')
     parser.add_argument('-o', required=False, action='store_true', help='open results in pager')
+    parser.add_argument('-t', required=False, help='tag to search.  pound sign optional')
     parser.add_argument('-v', required=False, action='store_true', help='validate tags in codebase')
     #parser.add_argument('-g', required=False, help='act globally / multi-repo mode')
     args = parser.parse_args()
@@ -150,18 +160,25 @@ def main():
 
     if args.l:
         for tag in registered_tags:
-            print tag["name"] + " " + tag["explanation"]
+            print(tag["name"] + " " + tag["explanation"])
         sys.exit(0)
 
     if args.v:
-        grep_command = "git grep '#ht' %s | egrep -o '#ht\w+' | grep -v '#https' | sort -u" \
-            % get_repo_root()
-        all_tags_found_in_code = subprocess.check_output(grep_command, shell=True).split("\n")
-        all_tags_found_in_code = set([x.strip() for x in all_tags_found_in_code if x.strip()])
+        # TODO make this respect the include patterns?
+        all_tags_found_in_code = set(get_all_tags_in_code())
         for t in all_tags_found_in_code:
             if t not in registered_tag_names:
                 sys.exit("Tag %s was found in code but not in registered tags. Update .htcomments" \
                     % t)
+        sys.exit(0)
+
+    if args.c:
+        # TODO make this respect the include patterns?
+        all_tags_found_in_code = get_all_tags_in_code()
+        counter = collections.Counter(all_tags_found_in_code)
+        most_common = counter.most_common()
+        for tag, count in most_common:
+            print("%s %s" % (tag, count))
         sys.exit(0)
 
     snippets = find_tag_snippets(include_patterns, exclude_patterns, registered_tag_names)
@@ -180,9 +197,9 @@ def main():
             start_line_arg = "+%s" % snippet["start_line"]
             subprocess.call(["less", start_line_arg, "-N", file])
         else:
-            print "*" * 20 + tag + ": " + file + "*" * 20
-            print text
-            print
+            print("*" * 20 + tag + ": " + file + "*" * 20)
+            print(text)
+            print()
         
 
 
